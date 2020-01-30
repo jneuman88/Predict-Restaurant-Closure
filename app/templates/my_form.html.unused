@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Witty title tab name</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+  
+    <h1> Please enter a business you're curious about: </h1>
+    <form method="POST">
+    	<input name="text">
+    	<input type="submit">
+    </form>
+
+    <style>
+  	.bottom-three {
+     		margin-bottom: 3cm;
+  	}
+    </style>
+
+    <h2> Short info about the predictor </h2>
+    <p> Description of predictor </p>
+   
+    <input type="submit" name="submit_button" value="Do Something">
+    <input type="submit" name="submit_button" value="Do Something Else">
+
+    {% endblock %}
+  </body>
+</html>

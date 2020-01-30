@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+    		<meta charset="utf-8">
+    		<title>Vegas Restaurant Predictor</title>
+    		<script>
+                	var data = '{{ data[0] }}';
+			var model_prob = '{{ model_prob[0] }}';
+                </script>
+  	</head>
+  	<body>
+		<h1> {{ data }} will stay open for 6 more months </h1>
+		<!--h2> with {{ model_prob }} probability </h2-->
+		{% extends "template.html" %}
+    		{% block content %}
+		{% endblock %}
+  	</body>
+</html>

@@ -1,1 +1,1 @@
-# Predict-Restaurant-Closure
+# Restaurant-Predictor

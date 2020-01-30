@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+    		<meta charset="utf-8">
+    		<title>Vegas Restaurant Predictor</title>
+  	</head>
+  	<body>
+		{% if model_output %}
+    			<h1> {{ name }} will NOT stay open for 6 more months </h1>
+		{% else %}
+        		<h1> {{ name }} will stay open for 6 more months </h1>
+    		{% endif %}
+		<h2> with {{ model_prob }} probability </h2>
+
+		<iframe src="{{ link }}" height="500" width="1500" style="border:none;">
+                </iframe>
+
+		<h2> Some information about your restaurant <h2>
+		<p> Is it closed?: {{ is_closed }} </p>
+		<p> Is it a chain?: {{ is_chain }} </p>
+		<p> Is it a duplicate location?: {{ duplicate_location }} </p>
+		<p> Its cost: {{ cost }} </p>
+		<p> Is it claimed? {{ is_claimed }} </p>
+		<p> Avg sentiment: {{ avg_compound_sentiment }} </p>
+		<p> Avg review length: {{ avg_review_length }} </p>
+		<p> Its review count: {{ review_count }} </p>
+		<p> Its rating: {{ rating }} </p>
+		<p> Model output: {{ model_output }} </p>
+		<!--h3> Reason 1: </h3>
+    		<p> The Yelp score is low </p>
+
+    		<h3> Reason 2: </h3>
+    		<p> There are too many similar stores in the area </p>
+
+	    	<h3> Reason 3: </h3>
+    		<p> Businesses this old typically fail </p-->
+
+		{% extends "template.html" %}
+                {% block content %}
+                {% endblock %}
+	</body>
+</html>

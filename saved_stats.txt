@@ -1,0 +1,15 @@
+print data_3_2018[data_3_2018.is_open_six_months_after_date == 0].shape[0], data_3_2018[data_3_2018.is_open_six_months_after_date == 1].shape[0]
+print data_9_2017[data_9_2017.is_open_six_months_after_date == 0].shape[0], data_9_2017[data_9_2017.is_open_six_months_after_date == 1].shape[0]
+print data_3_2017[data_3_2017.is_open_six_months_after_date == 0].shape[0], data_3_2017[data_3_2017.is_open_six_months_after_date == 1].shape[0]
+print data_9_2016[data_9_2016.is_open_six_months_after_date == 0].shape[0], data_9_2016[data_9_2016.is_open_six_months_after_date == 1].shape[0]
+print data_3_2016[data_3_2016.is_open_six_months_after_date == 0].shape[0], data_3_2016[data_3_2016.is_open_six_months_after_date == 1].shape[0]
+print data_9_2015[data_9_2015.is_open_six_months_after_date == 0].shape[0], data_9_2015[data_9_2015.is_open_six_months_after_date == 1].shape[0]
+print data_3_2015[data_3_2015.is_open_six_months_after_date == 0].shape[0], data_3_2015[data_3_2015.is_open_six_months_after_date == 1].shape[0]
+
+683 3071
+205 3572
+167 3604
+125 3555
+134 3492
+122 3442
+115 3348

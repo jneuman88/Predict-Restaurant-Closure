@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+    		<meta charset="utf-8">
+    		<title>Vegas Restaurant Predictor</title>
+  	</head>
+  	<body>
+		{% if model_output %}
+                        <h1> {{ name }} will NOT stay open for 6 more months </h1>
+                {% else %}
+                        <h1> {{ name }} will stay open for 6 more months </h1>
+                {% endif %}
+		<h2> with {{ model_prob }} probability </h2>
+		{% extends "template.html" %}
+    		{% block content %}
+		{% endblock %}
+  	</body>
+</html>

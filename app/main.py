@@ -10,7 +10,7 @@ app = Flask(__name__)
 @app.route("/")
 def homepage():
     restaurant_names = [line[:-1] for line in open('static/VegasRestaurantNames.csv')] # TODO handle if file doesn't exit
-    return render_template('homepage.html', restaurant_names=restaurant_names[:15])
+    return render_template('homepage.html', restaurant_names=restaurant_names[15:25])
 
 @app.route("/", methods=['POST'])
 def homepage_post():

@@ -6,25 +6,26 @@
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
   	</head>
 	<body>
+		<center>
+			<img src="static/images/eb8f6a2e-2b5a-4b5d-8ccc-dc6228dbce19_200x200.png" alt="Hamburger Catering" width="400" height="400" >
+		</center>
 
-		<!--img src="static/images/open_closed_hist.png" alt="Hamburger Catering" width="1600" height="800"-->
-
-		<div class="container">
-    			<h1> Please enter the name and address of a restaurant you're curious about: </h1>
-    			<form method="POST">
+    			<h2> Please enter the name and address of a restaurant you're curious about: </h2>
+    		<center>
+			<form method="POST">
     				<input required name="restaurant_name">
 				<input required name="restaurant_address">
 				<input type="submit" >
     			</form>
-		</div>
+		</center>
 
-		<div class="container">
-			<h1> Pick one of the following restaurants below: </h1>
-    			<form method="POST">
+			<h2> Pick one of the following restaurants below: </h2>
+			<h2> 
+			<form method="POST">
 				{% for restaurant_name in restaurant_names %}
 					<input type="submit" name="submit_button" value="{{ restaurant_name }}" >
 				{% endfor %}
     			</form>
-		</div>
+			</h2>
   	</body>
 </html>

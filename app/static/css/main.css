@@ -1,8 +1,12 @@
 body {
-  margin: 0;
-  padding: 0;
+  display: -ms-flexbox;
+  display: -webkit-box;
+  display: flex;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #444;
+  -ms-flex-pack: center;
+  -webkit-box-pack: center;
+  justify-content: center;
 }
 /*
  * Formatting the header area
@@ -73,4 +77,13 @@ h3 {
 .menu li a {
   color: #444;
   text-decoration: none;
+}
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+.aligncenter {
+    text-align: center;
 }

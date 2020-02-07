@@ -32,20 +32,20 @@ def calculate_smart_ratings(df):
     return smart_rating_on_date
 
 
-def calculate_future_restaurant_closure(df, restaurant_ids, reviews_for_open_businesses, after_six_months_after_date_filter):
-    reviews_after_six_months_after_date_df = reviews_for_open_businesses[after_six_months_after_date_filter]
+def calculate_future_restaurant_closure(df, restaurant_ids, reviews_for_open_businesses, after_date_filter):
+    reviews_after_date_df = reviews_for_open_businesses[after_date_filter]
     
-    restaurants_open_six_months_after_date = reviews_after_six_months_after_date_df.business_id.unique()
+    restaurants_open_after_date = reviews_after_date_df.business_id.unique()
     
-    is_closed_six_months_after_date = [ (restaurant_id, 0) if restaurant_id in restaurants_open_six_months_after_date \
-                                       or df.loc[restaurant_id,'is_open'] == 1 else \
-                                        (restaurant_id, 1) for restaurant_id in restaurant_ids ]
-    final_restaurant_ids, is_closed = zip(*is_closed_six_months_after_date)
-    is_closed_six_months_after_date_ser = pd.Series(is_closed, index=final_restaurant_ids)
-    
-    return is_closed_six_months_after_date_ser
+    is_closed_after_date = [ (restaurant_id, 0) if restaurant_id in restaurants_open_after_date \
+                             or df.loc[restaurant_id,'is_open'] == 1 else \
+                             (restaurant_id, 1) for restaurant_id in restaurant_ids ]
+    final_restaurant_ids, is_closed = zip(*is_closed_after_date)
+    is_closed_after_date_ser = pd.Series(is_closed, index=final_restaurant_ids).reindex(restaurant_ids)
 
-def calculate_review_sentiment_and_length(reviews_for_open_businesses_before_date, load_NLP=False):
+    return is_closed_after_date_ser
+
+def calculate_review_sentiment_and_length(reviews_for_open_businesses_before_date, date_str, load_NLP=False):
     last_three_reviews_per_rest_df = reviews_for_open_businesses_before_date.sort_values(by='date', ascending=True).groupby('business_id').tail(3)
     
     if load_NLP == False:
@@ -66,17 +66,17 @@ def calculate_review_sentiment_and_length(reviews_for_open_businesses_before_dat
             
             if idx % 10000 == 0:
                 print "Checkpoint :", idx
-        np.savetxt('NLP_negative_sentiment_%s.csv'%last_three_reviews_per_rest_df.shape[0], negative_sentiment, delimiter=',')
-        np.savetxt('NLP_neutral_sentiment_%s.csv'%last_three_reviews_per_rest_df.shape[0], neutral_sentiment, delimiter=',')
-        np.savetxt('NLP_positive_sentiment_%s.csv'%last_three_reviews_per_rest_df.shape[0], positive_sentiment, delimiter=',')
-        np.savetxt('NLP_compound_sentiment_%s.csv'%last_three_reviews_per_rest_df.shape[0], compound_sentiment, delimiter=',')
-        np.savetxt('Avg_review_length_%s.csv'%last_three_reviews_per_rest_df.shape[0], review_length, delimiter=',')
+        np.savetxt('NLP_negative_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), negative_sentiment, delimiter=',')
+        np.savetxt('NLP_neutral_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), neutral_sentiment, delimiter=',')
+        np.savetxt('NLP_positive_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), positive_sentiment, delimiter=',')
+        np.savetxt('NLP_compound_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), compound_sentiment, delimiter=',')
+        np.savetxt('Avg_review_length_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), review_length, delimiter=',')
     else:
-        negative_sentiment = np.genfromtxt('NLP_negative_sentiment_%s.csv'%last_three_reviews_per_rest_df.shape[0], delimiter=',')
-        neutral_sentiment = np.genfromtxt('NLP_neutral_sentiment_%s.csv'%last_three_reviews_per_rest_df.shape[0], delimiter=',')
-        positive_sentiment = np.genfromtxt('NLP_positive_sentiment_%s.csv'%last_three_reviews_per_rest_df.shape[0], delimiter=',')
-        compound_sentiment = np.genfromtxt('NLP_compound_sentiment_%s.csv'%last_three_reviews_per_rest_df.shape[0], delimiter=',')
-        review_length = np.genfromtxt('Avg_review_length_%s.csv'%last_three_reviews_per_rest_df.shape[0], delimiter=',')
+        negative_sentiment = np.genfromtxt('NLP_negative_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        neutral_sentiment  = np.genfromtxt('NLP_neutral_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        positive_sentiment = np.genfromtxt('NLP_positive_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        compound_sentiment = np.genfromtxt('NLP_compound_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        review_length = np.genfromtxt('Avg_review_length_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
         
     reviews_sentiment_df = pd.DataFrame(data = {'negative_sentiment' : negative_sentiment, \
                                                 'neutral_sentiment' : neutral_sentiment, \

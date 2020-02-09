@@ -3,21 +3,21 @@
  <head>
    <meta charset="utf-8">
    <title>Title</title>
-   <link rel="stylesheet" href="{{ url_for('static',     filename='css/template.css') }}">
+   <!--link rel="stylesheet" href="{{ url_for('static',     filename='css/template.css') }}"-->
  </head>
  <body>
     <footer>
       <div class="container">
         <strong><nav>
           <ul class="menu">
-            <li><a href="{{ url_for('homepage') }}">Home</a></li>
+            <a href="{{ url_for('homepage') }}">Home</a>
           </ul>
         </nav></strong>
       </div>
     </footer>
-    
+
     {% block content %}
     {% endblock %}
-    
+
  </body>
 </html>

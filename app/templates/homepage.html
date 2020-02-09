@@ -1,31 +1,32 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
-	<head>
-    		<meta charset="utf-8">
-    		<title>Vegas Restaurant Predictor</title>
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-  	</head>
-	<body>
-		<center>
-			<img src="static/images/eb8f6a2e-2b5a-4b5d-8ccc-dc6228dbce19_200x200.png" alt="Hamburger Catering" width="400" height="400" >
-		</center>
+        <head>
+                <meta charset="utf-8">
+                <title>Vegas Restaurant Predictor</title>
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+        </head>
+        <body style="background-color: #f9db77;">
+                <p> <br> </br> </p>
+                <p> <br> </br> </p>
 
-    			<h2> Please enter the name and address of a restaurant you're curious about: </h2>
-    		<center>
-			<form method="POST">
-    				<input required name="restaurant_name">
-				<input required name="restaurant_address">
-				<input type="submit" >
-    			</form>
-		</center>
+                <center>
+                        <img src="static/images/vivalasfoodie.png" alt="Viva Las Foodie sign" width="1200" height="300" >
+                </center>
 
-			<h2> Pick one of the following restaurants below: </h2>
-			<h2> 
-			<form method="POST">
-				{% for restaurant_name in restaurant_names %}
-					<input type="submit" name="submit_button" value="{{ restaurant_name }}" >
-				{% endfor %}
-    			</form>
-			</h2>
-  	</body>
+                        <h2>Enter the name and address of a restaurant and when you're planning to travel:</h2>
+                <center>
+                        <!-- consider adding default values here -->
+                        <form method="POST">
+                                <input required name="restaurant_name" placeholder="Egg Works" style="width: 250px; height: 45px; font-size: 20px;" >
+                                <input required name="restaurant_address" placeholder="9355 W Flamingo Rd" style="width: 250px; height: 45px; font-size: 20px;" >
+                                <select required name="forecast_length" style="width: 250px; height: 45px; font-size: 20px;" >
+                                        <option value="1 month">1 month</option>
+                                        <option value="3 months">3 months</option>
+                                        <option value="6 months">6 months</option>
+                                        <option value="9 months">9 months</option>
+                                </select>
+                                <input type="submit" style="width: 250px; height: 45px; font-size: 20px;" >
+                        </form>
+                </center>
+        </body>
 </html>

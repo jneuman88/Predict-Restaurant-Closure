@@ -78,12 +78,3 @@ h3 {
   color: #444;
   text-decoration: none;
 }
-.center {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 50%;
-}
-.aligncenter {
-    text-align: center;
-}

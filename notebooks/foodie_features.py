@@ -66,17 +66,17 @@ def calculate_review_sentiment_and_length(reviews_for_open_businesses_before_dat
             
             if idx % 10000 == 0:
                 print "Checkpoint :", idx
-        np.savetxt('NLP_negative_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), negative_sentiment, delimiter=',')
-        np.savetxt('NLP_neutral_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), neutral_sentiment, delimiter=',')
-        np.savetxt('NLP_positive_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), positive_sentiment, delimiter=',')
-        np.savetxt('NLP_compound_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), compound_sentiment, delimiter=',')
-        np.savetxt('Avg_review_length_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), review_length, delimiter=',')
+        np.savetxt('saved_data/NLP_negative_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), negative_sentiment, delimiter=',')
+        np.savetxt('saved_data/NLP_neutral_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), neutral_sentiment, delimiter=',')
+        np.savetxt('saved_data/NLP_positive_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), positive_sentiment, delimiter=',')
+        np.savetxt('saved_data/NLP_compound_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), compound_sentiment, delimiter=',')
+        np.savetxt('saved_data/Avg_review_length_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), review_length, delimiter=',')
     else:
-        negative_sentiment = np.genfromtxt('NLP_negative_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
-        neutral_sentiment  = np.genfromtxt('NLP_neutral_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
-        positive_sentiment = np.genfromtxt('NLP_positive_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
-        compound_sentiment = np.genfromtxt('NLP_compound_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
-        review_length = np.genfromtxt('Avg_review_length_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        negative_sentiment = np.genfromtxt('saved_data/NLP_negative_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        neutral_sentiment  = np.genfromtxt('saved_data/NLP_neutral_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        positive_sentiment = np.genfromtxt('saved_data/NLP_positive_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        compound_sentiment = np.genfromtxt('saved_data/NLP_compound_sentiment_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
+        review_length = np.genfromtxt('saved_data/Avg_review_length_%s_%s.csv'%(last_three_reviews_per_rest_df.shape[0], date_str), delimiter=',')
         
     reviews_sentiment_df = pd.DataFrame(data = {'negative_sentiment' : negative_sentiment, \
                                                 'neutral_sentiment' : neutral_sentiment, \

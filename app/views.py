@@ -10,8 +10,17 @@ import logging
 @app.route("/")
 def homepage():
     logging.info('Loading homepage')
-    restaurant_names = [line[:-1] for line in open('app/static/VegasRestaurantNames.csv')] # TODO handle if file doesn't exist
-    return render_template('homepage.html', restaurant_names=list( restaurant_names[i] for i in [ 16, 17, 21, 24, 29 ] ))
+    success = True
+    try:
+        restaurant_names = [line[:-1] for line in open('app/static/VegasRestaurantNames.csv')]
+    except Exception as e:
+        logging.error('Exception occurred: %s', e)
+        success = False
+    
+    if success == True:
+        return render_template('homepage.html', restaurant_names=list( restaurant_names[i] for i in [ 16, 17, 21, 24, 29 ] ))
+    else:
+        return False
 
 @app.route("/", methods=['POST'])
 def homepage_post():
@@ -28,7 +37,6 @@ def homepage_post():
 
     model = tools.XGBoost_model(int(forecast_length[0][0]))
 
-    # do something now with input i.e. query yelp with input, make sure to handle errors
     HEADERS = {'Authorization':'Bearer %s' %'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
     URL_business = 'https://api.yelp.com/v3/businesses/matches'
     PARAMS_business = {'name' : restaurant_name, 'address1' : restaurant_address, 'city' : 'Las Vegas', 'state' : 'NV', 'country' : 'US'}
@@ -92,17 +100,20 @@ def homepage_post():
             try:
                 link = u'https://www.yelp.com/biz/{alias}'.format(alias=alias)
             except Exception as e:
-                print(e)
+                logging.error("Exception occurred: %s", e)
+                return render_template('error_in_model.html', name=restaurant_name, address=restaurant_address)
 
             logging.info("Link: %s", link)
 
-            reason_1 = "The restaurant is claimed by the owner"#%(restaurant_name)
-            reason_2 = "The restaurant is a chain"#%(resturant_name) 
-            reason_3 = "It has a strong Yelp rating"#%(restaurant_name)
+            try:
+                reasons = tools.get_reasons(features, model_output, model.get_forecast_len())
 
-            logging.info("Reason 1: %s", reason_1)
-            logging.info("Reason 2: %s", reason_2)
-            logging.info("Reason 3: %s", reason_3)
+                reason_1 = reasons[0]
+                reason_2 = reasons[1]
+                reason_3 = reasons[2]
+            except Exception as e:
+                logging.error("Exception occurred: %s", e)
+                return render_template('error_in_model.html', name=restaurant_name, address=restaurant_address)
 
             return render_template('input_restaurant_result.html',  name=restaurant_name, link=link, is_closed=bool(is_closed), is_chain=bool(is_chain), \
                                                                         duplicate_location=bool(duplicate_location), cost=cost, is_claimed=bool(is_claimed), \
@@ -113,7 +124,6 @@ def homepage_post():
             logging.error('Error in model prediction or making webpage with findings')
             return render_template('error_in_model.html', name=restaurant_name, address=restaurant_address)
     else:
-        # TODO handle errors in input here
         logging.error(yelp_request)
-        return render_template('error_in_business_input.html', name=restaurant_name, address=restaurant_address) # TODO make this html file
+        return render_template('error_in_business_input.html', name=restaurant_name, address=restaurant_address)
 

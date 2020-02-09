@@ -6,6 +6,7 @@ import xgboost as xgb
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import pickle
 from sklearn.pipeline import Pipeline
+import logging
 
 def do_business_request():
     HEADERS = {'Authorization':'Bearer %s'%'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
@@ -19,40 +20,40 @@ def do_business_request():
 
 
 def do_review_request(response_blob):
-    print("Starting review request")
+    logging.info("Starting review request")
     try:
         business_id = response_blob['id']
     except:
-        print("'id' not in response_blob")
+        logging.info("'id' not in response_blob")
         return
 
     HEADERS = {'Authorization':'Bearer %s'%'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
     URL_reviews = 'https://api.yelp.com/v3/businesses/{business_id}/reviews'
-    print("Headers and URL_reviews")
+    logging.info("Headers and URL_reviews")
 
     try:
         duplicate_locations = np.genfromtxt('app/static/duplicate_locations.csv',delimiter=',')
     except:
-        print("Error opening duplicate locations file")
+        logging.info("Error opening duplicate locations file")
         return
-    print("Duplicate locations")
+    logging.info("Duplicate locations")
 
     try:
         yelp_review_request = requests.get(URL_reviews.format(business_id=business_id), headers = HEADERS)
-        print("Review request done, status code:", yelp_review_request.status_code)
+        logging.info("Review request done, status code: %s", yelp_review_request.status_code)
     except:
-        print("Error doing review request")
+        logging.info("Error doing review request")
         return
 
     if yelp_review_request.status_code == 200:
-        print("Review request text:", yelp_review_request.text)
+        logging.info("Review request text: %s", yelp_review_request.text)
         sum_review_length = 0.0
         count_of_reviews = 0
         compound_sentiment = 0.0
         try:
             analyzer = SentimentIntensityAnalyzer()
         except:
-            print("Error for vader")
+            logging.info("Error for vader")
             return
 
         for review in json.loads(yelp_review_request.text)['reviews']:
@@ -64,26 +65,26 @@ def do_review_request(response_blob):
         avg_review_length = float(sum_review_length) / count_of_reviews
         avg_compound_sentiment = float(compound_sentiment) / count_of_reviews
 
-        print("Avg review length:", avg_review_length)
-        print("Avg compound sentiment:", avg_compound_sentiment)
+        logging.info("Avg review length: %s", avg_review_length)
+        logging.info("Avg compound sentiment: %s", avg_compound_sentiment)
 
         alias = response_blob['alias']
 
         latitude = response_blob['coordinates']['latitude']
         longitude = response_blob['coordinates']['longitude']
 
-        print("Alias:", alias)
-        print("Latitude:", latitude)
-        print("Longitude:", longitude)
+        logging.info("Alias: %s", alias)
+        logging.info("Latitude: %s", latitude)
+        logging.info("Longitude: %s", longitude)
 
         duplicate_location = 1 if ([ latitude, longitude ] == duplicate_locations).all(axis=1).any() else 0
 
-        print("Duplicate location:", duplicate_location)
+        logging.info("Duplicate location: %s", duplicate_location)
 
         return ( avg_review_length, avg_compound_sentiment, alias, duplicate_location )
     else:
-        print("Review request status code:", yelp_review_request.status_code)
-        print("Error in review_input: ", yelp_review_request)
+        logging.info("Review request status code: %s", yelp_review_request.status_code)
+        logging.info("Error in review_input: %s", yelp_review_request)
         return None
 
 def do_business_info_request(response_blob):
@@ -123,8 +124,8 @@ def do_business_info_request(response_blob):
 
         return ( is_closed, rating, review_count, cost, cost_1, cost_2, cost_3, cost_4, is_claimed )
     else:
-        print("Business info status code:", yelp_business_info_request.status_code)
-        print("Error in business info input: ", yelp_business_info_request)
+        logging.info("Business info status code: %s", yelp_business_info_request.status_code)
+        logging.info("Error in business info input: %s", yelp_business_info_request)
         return None
 
 class LR_model():
@@ -138,10 +139,6 @@ class LR_model():
         self.intercept = -0.89443562
         self.threshold = 0.5
 
-    #@staticmethod
-    #def convert_to_prob(x):
-    #    return 1.0/(1 + np.exp(-x))
-
     def set_new_model_params(weights=None, intercept=None, threshold=None):
         if weights is not None:
             self.weights = weights
@@ -151,16 +148,16 @@ class LR_model():
             self.threshold = threshold
 
     def predict(self, features):
-        print("Features:", features)
+        logging.info("Features: %s", features)
 
         log_odds = np.dot(self.weights, features) + self.intercept
-        print("Log odds:", log_odds[0])
+        logging.info("Log odds: %s", log_odds[0])
 
         model_prob = 1.0 / ( 1.0 + np.exp(-log_odds) ) #convert_to_prob(log_odds)
-        print("Model_prob:", model_prob[0])
+        logging.info("Model_prob: %s", model_prob[0])
 
         model_output = True if model_prob > self.threshold else False
-        print("Model_output:", model_output)
+        logging.info("Model_output: %s", model_output)
 
         return model_prob[0], model_output
 
@@ -169,14 +166,15 @@ class XGBoost_model():
     def __init__(self, forecast_len):
         with open('app/static/trained_classifier_%s_months.pkl'%(forecast_len), 'rb') as fid:
             self.gs_model = pickle.load(fid)
-            print(self.gs_model)
+            logging.info("Loaded model: %s", self.gs_model)
+        self.forecast_len = forecast_len
 
     def predict(self, features):
-        print("Features:", features)
+        logging.info("Features: %s", features)
 
         probabilities = self.gs_model.predict_proba( features.reshape(1, -1) )[0]
 
-        print("Probabilities:", probabilities)
+        logging.info("Probabilities: %s", probabilities)
 
         prob_0, prob_1 = probabilities[0], probabilities[1]
         pred = 1 if prob_1 > prob_0 else 0
@@ -185,3 +183,47 @@ class XGBoost_model():
             return prob_1, pred
         else:
             return prob_0, pred
+
+    def get_forecast_len(self):
+        return self.forecast_len
+
+def get_reasons(features, model_output, forecast_len):
+    """
+    claimed, avg review length, rating, sentiment, duplicate location, review count, chain, cost are feature importances (1 month model)
+    """
+
+    logging.info("Figuring out the reasons")
+
+    # negative signs are for inversely correlated features
+    features_sorted_by_importance = [ features[6], -features[8], features[10], features[7], features[1], features[9], features[0], features[2], features[3], features[4], features[5] ]
+   
+    #                   Close reasons                                                               Open reasons
+    feature_names = [   ('The restaurant is not claimed by the owner',                              'The restaurant is claimed by the owner',                                   0.5     ),
+                        ('Yelpers have left long reviews',                                          'Yelpers have left short reviews',                                          -500    ),
+                        ('The restaurant has a low rating',                                         'The restaurant has a high rating',                                         3.25    ), 
+                        ('Yelpers have left harsh sounding reviews',                                'Yelpers have left positive sounding reviews',                              0.0     ),
+                        ('The restaurant is in a location that other restaurants have been in',     'The restaurant is not in a location that other restaurants have been in',  0.5     ),
+                        ('The restaurant has too few reviews',                                      'The restaurant has too many reviews',                                      325     ),
+                        ('The restuarant is not a chain',                                           'The restuarant is a chain',                                                0.5     ), 
+                        ('The restaurant is not in the cheapest Yelp category',                     'The restaurant is in the cheapest Yelp category',                          0.5     ),
+                        ('The restaurant is not in the second cheapest Yelp category',              'The restaurant is in the second cheapest Yelp category',                   0.5     ),
+                        ('The restaurant is not in the second most expensive Yelp category',        'The restaurant is in the second most expensive Yelp category',             0.5     ),
+                        ('The restaurant is not in the most expensive Yelp category',               'The restaurant is in the most expensive Yelp category',                    0.5     )   ]
+ 
+    reasons = []
+    max_reasons = 3
+
+    for feature_val, feature_name in zip(features_sorted_by_importance, feature_names):
+        logging.info("Feature name and value: %s (%s)", feature_name, feature_val)
+        if model_output == True and feature_val < feature_name[2]: # will close and feature_val implies closing
+            reasons.append(feature_name[0])
+        elif model_output == False and feature_val > feature_name[2]: # will remain open and feature_val implies staying open
+            reasons.append(feature_name[1])
+
+        if len(reasons) >= max_reasons:
+            break
+
+    for reason in reasons:
+        logging.info("Reasons: %s", reason)
+
+    return reasons

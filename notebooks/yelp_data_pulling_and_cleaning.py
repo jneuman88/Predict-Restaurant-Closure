@@ -3,6 +3,9 @@ import numpy as np
 import os
 import glob
 
+def pull_raw_business_data():
+    return pd.read_json('yelp_reviews/business.json',lines=True)
+
 def clean_business_data(businesses_df,
                         review_threshold=10,
                         required_num_of_closed_thresh_in_city=1000, 

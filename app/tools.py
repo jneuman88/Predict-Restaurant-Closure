@@ -196,20 +196,20 @@ def get_reasons(features, model_output, forecast_len):
 
     # negative signs are for inversely correlated features
     features_sorted_by_importance = [ features[6], -features[8], features[10], features[7], features[1], features[9], features[0], features[2], features[3], features[4], features[5] ]
-   
+
     #                   Close reasons                                                               Open reasons
     feature_names = [   ('The restaurant is not claimed by the owner',                              'The restaurant is claimed by the owner',                                   0.5     ),
                         ('Yelpers have left long reviews',                                          'Yelpers have left short reviews',                                          -500    ),
-                        ('The restaurant has a low rating',                                         'The restaurant has a high rating',                                         3.25    ), 
+                        ('The restaurant has a low rating',                                         'The restaurant has a high rating',                                         3.25    ),
                         ('Yelpers have left harsh sounding reviews',                                'Yelpers have left positive sounding reviews',                              0.0     ),
                         ('The restaurant is in a location that other restaurants have been in',     'The restaurant is not in a location that other restaurants have been in',  0.5     ),
                         ('The restaurant has too few reviews',                                      'The restaurant has too many reviews',                                      325     ),
-                        ('The restuarant is not a chain',                                           'The restuarant is a chain',                                                0.5     ), 
+                        ('The restuarant is not a chain',                                           'The restuarant is a chain',                                                0.5     ),
                         ('The restaurant is not in the cheapest Yelp category',                     'The restaurant is in the cheapest Yelp category',                          0.5     ),
                         ('The restaurant is not in the second cheapest Yelp category',              'The restaurant is in the second cheapest Yelp category',                   0.5     ),
                         ('The restaurant is not in the second most expensive Yelp category',        'The restaurant is in the second most expensive Yelp category',             0.5     ),
                         ('The restaurant is not in the most expensive Yelp category',               'The restaurant is in the most expensive Yelp category',                    0.5     )   ]
- 
+
     reasons = []
     max_reasons = 3
 

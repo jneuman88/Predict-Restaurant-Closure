@@ -187,7 +187,7 @@ def build_X_and_y(businesses_df, reviews_df, date, load_NLP=True, forecast_month
     if features is not None:
         data = data[features]
     
-    #### TARGET VARIABLE -- Is a restaurant open 6 months after the input date ####
+    #### TARGET VARIABLE -- Is a restaurant open forecast_months after the input date ####
     if forecast_months is not None:
         for forecast_month in forecast_months:
             forecast_filter = reviews_df.date > pd.Timestamp(date + relativedelta(months=forecast_month))

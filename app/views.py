@@ -10,17 +10,12 @@ import logging
 @app.route("/")
 def homepage():
     logging.info('Loading homepage')
-    success = True
     try:
         restaurant_names = [line[:-1] for line in open('app/static/VegasRestaurantNames.csv')]
+        return render_template('homepage.html', restaurant_names=list( restaurant_names[i] for i in [ 16, 17, 21, 24, 29 ] ))
     except Exception as e:
         logging.error('Exception occurred: %s', e)
-        success = False
-    
-    if success == True:
-        return render_template('homepage.html', restaurant_names=list( restaurant_names[i] for i in [ 16, 17, 21, 24, 29 ] ))
-    else:
-        return False
+        return render_template('error_in_model.html')
 
 @app.route("/", methods=['POST'])
 def homepage_post():

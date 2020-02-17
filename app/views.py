@@ -20,7 +20,7 @@ def homepage_post():
     successful_input, restaurant_name, restaurant_address, forecast_length = tools.handle_input(request.form)
 
     if successful_input == False:
-        return render_template('error_in_model.html')
+        return render_template('error_in_homepage.html')
 
     model = tools.XGBoost_model(int(forecast_length[0][0]))  
     

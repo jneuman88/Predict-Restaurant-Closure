@@ -34,6 +34,27 @@ class XGBoost_model():
     def get_forecast_len(self):
         return self.forecast_len
     
+def handle_input(request_form):
+    success = True
+    
+    try:
+        logging.info('Request form: %s', request_form)
+
+        restaurant_name = request_form['restaurant_name'] if 'restaurant_name' in request_form else ''
+        restaurant_address = request_form['restaurant_address'] if 'restaurant_address' in request_form else ''
+        forecast_length = request_form['forecast_length'].split(',') if 'forecast_length' in request_form else ''
+
+        logging.info('Restaurant name: %s', restaurant_name)
+        logging.info('Restaurant address: %s', restaurant_address)
+        logging.info('Forecast length: %s', forecast_length)
+        
+        return success, restaurant_name, restaurant_address, forecast_length
+    except Exception as e:
+        success = False
+        logging.error('Exception occurred: %s', e)
+        
+        return success, '',                              '',              ''
+
 def handle_backend(restaurant_name, restaurant_address, model):
     successful_bus_req, response_blob = handle_business_request(restaurant_name, restaurant_address)
 
@@ -59,33 +80,13 @@ def handle_backend(restaurant_name, restaurant_address, model):
     else:
         return 'error_in_model.html', {}
 
-def handle_input(request_form):
-    success = True
-    
-    try:
-        logging.info('Request form: %s', request_form)
-
-        restaurant_name = request_form['restaurant_name'] if 'restaurant_name' in request_form else ''
-        restaurant_address = request_form['restaurant_address'] if 'restaurant_address' in request_form else ''
-        forecast_length = request_form['forecast_length'].split(',') if 'forecast_length' in request_form else ''
-
-        logging.info('Restaurant name: %s', restaurant_name)
-        logging.info('Restaurant address: %s', restaurant_address)
-        logging.info('Forecast length: %s', forecast_length)
-        
-        return success, restaurant_name, restaurant_address, forecast_length
-    except Exception as e:
-        success = False
-        logging.error('Exception occurred: %s', e)
-        
-        return success, '',                              '',              ''
+HEADERS = {'Authorization':'Bearer %s'%'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
 
 def handle_business_request(restaurant_name, restaurant_address):
     success = True
     
     logging.info('Doing business request')
-    
-    HEADERS = {'Authorization':'Bearer %s'%'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
+
     PARAMS = {'name': restaurant_name, 'address1': restaurant_address, 'city': 'Las Vegas', 'state': 'NV', 'country': 'US'}
     
     yelp_request = requests.get('https://api.yelp.com/v3/businesses/matches', params = PARAMS, headers = HEADERS)
@@ -121,9 +122,7 @@ def handle_review_request(response_blob):
         success = False
         return success, '', '', '', ''
 
-    HEADERS = {'Authorization':'Bearer %s'%'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
-    URL_reviews = 'https://api.yelp.com/v3/businesses/{business_id}/reviews'
-    logging.info("Headers and URL_reviews")
+    URL_reviews = 'https://api.yelp.com/v3/businesses/{business_id}/reviews'.format(business_id=business_id)
 
     try:
         duplicate_locations = np.genfromtxt('app/static/duplicate_locations.csv', delimiter=',')
@@ -132,11 +131,9 @@ def handle_review_request(response_blob):
         logging.error("Review request was unsuccessful")
         success = False
         return success, '', '', '', ''
-    logging.info("Duplicate locations")
 
     try:
-        yelp_review_request = requests.get(URL_reviews.format(business_id=business_id), headers = HEADERS)
-        logging.info("Review request done, status code: %s", yelp_review_request.status_code)
+        yelp_review_request = requests.get(URL_reviews, headers = HEADERS)
     except:
         logging.error("Review request was unsuccessful")
         success = False
@@ -147,13 +144,8 @@ def handle_review_request(response_blob):
         sum_review_length = 0.0
         count_of_reviews = 0
         compound_sentiment = 0.0
-        try:
-            analyzer = SentimentIntensityAnalyzer()
-        except:
-            logging.error("Error doing vader sentiment analysis")
-            logging.error("Review request was unsuccessful")
-            success = False
-            return success, '', '', '', ''
+            
+        analyzer = SentimentIntensityAnalyzer()
 
         for review in json.loads(yelp_review_request.text)['reviews']:
             text = review['text']
@@ -164,22 +156,14 @@ def handle_review_request(response_blob):
         avg_review_length = float(sum_review_length) / count_of_reviews
         avg_compound_sentiment = float(compound_sentiment) / count_of_reviews
 
-        logging.info("Avg review length: %s", avg_review_length)
-        logging.info("Avg compound sentiment: %s", avg_compound_sentiment)
-
         alias = response_blob['alias']
 
         latitude = response_blob['coordinates']['latitude']
         longitude = response_blob['coordinates']['longitude']
 
-        logging.info("Alias: %s", alias)
-        logging.info("Latitude: %s", latitude)
-        logging.info("Longitude: %s", longitude)
-
         duplicate_location = 1 if ([ latitude, longitude ] == duplicate_locations).all(axis=1).any() else 0
 
-        logging.info("Duplicate location: %s", duplicate_location)
-
+        logging.info("Finished review request")
         return success, avg_review_length, avg_compound_sentiment, alias, duplicate_location
     else:
         logging.error("Review request was unsuccessful")
@@ -193,10 +177,10 @@ def handle_business_info_request(response_blob):
     
     logging.info("Starting business info request")
     business_id = response_blob['id']
-    HEADERS = {'Authorization':'Bearer %s' %'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
-    URL_business_info = 'https://api.yelp.com/v3/businesses/{business_id}'
 
-    yelp_business_info_request = requests.get(URL_business_info.format(business_id=business_id), headers = HEADERS)
+    URL_business_info = 'https://api.yelp.com/v3/businesses/{business_id}'.format(business_id=business_id)
+
+    yelp_business_info_request = requests.get(URL_business_info, headers = HEADERS)
     if yelp_business_info_request.status_code == 200:
         biz_info_response_blob = json.loads(yelp_business_info_request.text)
         
@@ -210,12 +194,9 @@ def handle_business_info_request(response_blob):
         
         is_claimed = biz_info_response_blob['is_claimed']
 
-        cost = len(biz_info_response_blob['price']) # these are strings that look liked '$', '$$', '$$$', and '$$$$'
+        cost = len(biz_info_response_blob['price']) # '$', '$$', '$$$', and '$$$$'
         
-        cost_1 = 0
-        cost_2 = 0
-        cost_3 = 0
-        cost_4 = 0
+        cost_1, cost_2, cost_3, cost_4 = 0, 0, 0, 0
 
         if cost == 1:
             cost_1 = 1
@@ -226,13 +207,12 @@ def handle_business_info_request(response_blob):
         elif cost == 4:
             cost_4 = 1
         else:
-            return None
+            success = False
+            return success, '', '', '', '', '', '', '', '', ''
 
-        if is_claimed == True:
-            is_claimed = 1
-        else:
-            is_claimed = 0
+        is_claimed = int(is_claimed)
 
+        logging.info("Finished business info request")
         return success, is_closed, rating, review_count, cost, cost_1, cost_2, cost_3, cost_4, is_claimed
     else:
         logging.info("Business info status code: %s", yelp_business_info_request.status_code)
@@ -243,6 +223,7 @@ def handle_business_info_request(response_blob):
 def handle_prediction(restaurant_name, duplicate_location, cost_1, cost_2, cost_3, cost_4, is_claimed, avg_compound_sentiment, avg_review_length, review_count, rating, alias, model):
     success = True
     
+    logging.info("Starting prediction")
     try:
         chains = [line[:-1] for line in open('app/static/chains.csv')]
         is_chain = 1 if str(restaurant_name.encode('utf-8')) in chains else 0
@@ -266,7 +247,6 @@ def handle_prediction(restaurant_name, duplicate_location, cost_1, cost_2, cost_
 
     try:
         link = u'https://www.yelp.com/biz/{alias}'.format(alias=alias)
-        logging.info("Link: %s", link)
     except Exception as e:
         logging.error("Exception occurred: %s", e)
         logging.error("Handle prediction failed")
@@ -275,7 +255,6 @@ def handle_prediction(restaurant_name, duplicate_location, cost_1, cost_2, cost_
 
     try:
         reasons = get_reasons(features, model_output, model.get_forecast_len())
-
         reason_1 = reasons[0]
         reason_2 = reasons[1]
         reason_3 = reasons[2]
@@ -285,45 +264,63 @@ def handle_prediction(restaurant_name, duplicate_location, cost_1, cost_2, cost_
         success = False
         return success, '', '', '', '', '', ''
 
+    logging.info("Finished prediction")
     return success, link, model_prob, model_output, reason_1, reason_2, reason_3
 
 def get_reasons(features, model_output, forecast_len):
     """
-    claimed, avg review length, rating, sentiment, duplicate location, review count, chain, cost are feature importances (1 month model)
+    claimed, rating, avg review len, rev count, sentiment, cost1, dup loc, chain, cost2, cost3, cost4 are FIs (1 month model)
+    
+    claimed, cost2, dup loc, rating, chain, rev count, avg review len, cost1, sentiment, cost3, cost4 are FIs (3 month model)
+    
+    claimed, rating, sentiment, chain, rev count, avg review len, cost2, dup loc, cost1, cost4, cost3 are FIs (6 month model)
+    
+    claimed, rating, rev count, chain, sentiment, cost1, avg review len, cost2, dup loc, cost3, cost4 are FIs (9 month model)
     """
 
     logging.info("Figuring out the reasons")
 
-    # negative signs are for inversely correlated features
-    features_sorted_by_importance = [ features[6], -features[8], features[10], features[7], features[1], features[9], features[0], features[2], features[3], features[4], features[5] ]
-
+    if forecast_len == 1:
+        features_order = (6, 10, 8, 9, 7, 2, 1, 0, 3, 4, 5)
+    elif forecast_len == 3:
+        features_order = (6, 3, 1, 10, 0, 9, 8, 2, 7, 4, 5)
+    elif forecast_len == 6:
+        features_order = (6, 10, 7, 0, 9, 8, 3, 1, 2, 5, 4)
+    else: # forecast_len == 9
+        features_order = (6, 10, 9, 0, 7, 2, 8, 3, 1, 4, 5)
+    
+    
     #                   Close reasons                                                               Open reasons
-    feature_names = [   ('The restaurant is not claimed by the owner',                              'The restaurant is claimed by the owner',                                   0.5     ),
-                        ('Yelpers have left long reviews',                                          'Yelpers have left short reviews',                                          -500    ),
-                        ('The restaurant has a low rating',                                         'The restaurant has a high rating',                                         3.25    ),
-                        ('Yelpers have left harsh sounding reviews',                                'Yelpers have left positive sounding reviews',                              0.0     ),
-                        ('The restaurant is in a location that other restaurants have been in',     'The restaurant is not in a location that other restaurants have been in',  0.5     ),
-                        ('The restaurant has too few reviews',                                      'The restaurant has too many reviews',                                      325     ),
-                        ('The restuarant is not a chain',                                           'The restuarant is a chain',                                                0.5     ),
-                        ('The restaurant is not in the cheapest Yelp category',                     'The restaurant is in the cheapest Yelp category',                          0.5     ),
-                        ('The restaurant is not in the second cheapest Yelp category',              'The restaurant is in the second cheapest Yelp category',                   0.5     ),
-                        ('The restaurant is not in the second most expensive Yelp category',        'The restaurant is in the second most expensive Yelp category',             0.5     ),
-                        ('The restaurant is not in the most expensive Yelp category',               'The restaurant is in the most expensive Yelp category',                    0.5     )   ]
-
+    feature_names = [   ('The restuarant is not a chain', 'The restuarant is a chain', 0.5),
+                        ('The restaurant is in a location that other restaurants have been in', 'The restaurant is not in a location that other restaurants have been in', 0.5),
+                        ('The restaurant is not in the cheapest Yelp category', 'The restaurant is in the cheapest Yelp category', 0.5),
+                        ('The restaurant is not in the second cheapest Yelp category', 'The restaurant is in the second cheapest Yelp category', 0.5),
+                        ('The restaurant is not in the second most expensive Yelp category', 'The restaurant is in the second most expensive Yelp category', 0.5),
+                        ('The restaurant is not in the most expensive Yelp category', 'The restaurant is in the most expensive Yelp category', 0.5), 
+                        ('The restaurant is not claimed by the owner', 'The restaurant is claimed by the owner', 0.5),
+                        ('Yelpers have left harsh sounding reviews', 'Yelpers have left positive sounding reviews', 0.5),
+                        ('Yelpers have left long reviews', 'Yelpers have left short reviews', -475.5), # negative corr
+                        ('The restaurant has many reviews', 'The restaurant has few reviews', -242.5), # negative corr
+                        ('The restaurant has a low rating', 'The restaurant has a high rating', 3.49) ]
+    
     reasons = []
     max_reasons = 3
 
-    for feature_val, feature_name in zip(features_sorted_by_importance, feature_names):
-        logging.info("Feature name and value: %s (%s)", feature_name, feature_val)
-        if model_output == True and feature_val < feature_name[2]: # will close and feature_val implies closing
-            reasons.append(feature_name[0])
-        elif model_output == False and feature_val > feature_name[2]: # will remain open and feature_val implies staying open
-            reasons.append(feature_name[1])
+    for feature_idx in features_order:
+        feature_val = -features[feature_idx] if (feature_idx == 8 or feature_idx == 9) else features[feature_idx]
+        feature_compare = feature_names[feature_idx]
+        
+        logging.info("Feature name and value: %s (%s)", feature_compare, feature_val)
+        
+        if model_output == True and feature_val < feature_compare[2]: # will close, feature_val implies closing
+            reasons.append(feature_compare[0])
+        elif model_output == False and feature_val > feature_compare[2]: # will remain open, feature_val implies staying open
+            reasons.append(feature_compare[1])
 
         if len(reasons) >= max_reasons:
             break
 
     for reason in reasons:
-        logging.info("Reasons: %s", reason)
+        logging.info("Reason: %s", reason)
 
     return reasons

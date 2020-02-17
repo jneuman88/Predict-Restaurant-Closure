@@ -1,8 +1,9 @@
 from flask import Flask
-app = Flask(__name__)
-
 import logging
 from time import strftime
+
+app = Flask(__name__)
+
 logfile = 'logs/info_{}.log'.format(strftime('%Y-%m-%d'))
 logformat = '%(asctime)s %(levelname)s %(message)s'
 

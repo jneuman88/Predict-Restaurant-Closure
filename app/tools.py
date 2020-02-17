@@ -8,42 +8,139 @@ import pickle
 from sklearn.pipeline import Pipeline
 import logging
 
-def do_business_request():
+class XGBoost_model():
+
+    def __init__(self, forecast_len):
+        with open('app/static/trained_classifier_%s_months.pkl'%(forecast_len), 'rb') as fid:
+            self.gs_model = pickle.load(fid)
+            logging.info("Loaded model: %s", self.gs_model)
+        self.forecast_len = forecast_len
+
+    def predict(self, features):
+        logging.info("Features: %s", features)
+
+        probabilities = self.gs_model.predict_proba( features.reshape(1, -1) )[0]
+
+        logging.info("Probabilities: %s", probabilities)
+
+        prob_0, prob_1 = probabilities[0], probabilities[1]
+        pred = 1 if prob_1 > prob_0 else 0
+
+        if pred == 1:
+            return prob_1, pred
+        else:
+            return prob_0, pred
+
+    def get_forecast_len(self):
+        return self.forecast_len
+    
+def handle_backend(restaurant_name, restaurant_address, model):
+    successful_bus_req, response_blob = handle_business_request(restaurant_name, restaurant_address)
+
+    if successful_bus_req == False:
+        return 'error_in_yelp_api_call.html', {}
+    
+    successful_rev_req, avg_review_length, avg_compound_sentiment, alias, duplicate_location = handle_review_request(response_blob)
+
+    if successful_rev_req == False:
+        return 'error_in_yelp_review_request.html', {}
+
+    successful_bus_info_req, is_closed, rating, review_count, cost, cost_1, cost_2, cost_3, cost_4, is_claimed = handle_business_info_request(response_blob)
+
+    if successful_bus_info_req == False:
+        return 'error_in_yelp_business_info_request.html', {}
+    elif is_closed == True:
+        return 'closed_restaurant.html', {}
+
+    successful_pred, link, model_prob, model_output, reason_1, reason_2, reason_3 = handle_prediction(restaurant_name, duplicate_location, cost_1, cost_2, cost_3, cost_4, is_claimed, avg_compound_sentiment, avg_review_length, review_count, rating, alias, model)
+
+    if successful_pred == True:
+        return 'input_restaurant_result.html', {'link': link, 'model_prob': model_prob, 'model_output': model_output, 'reason_1': reason_1, 'reason_2': reason_2, 'reason_3':reason_3}
+    else:
+        return 'error_in_model.html', {}
+
+def handle_input(request_form):
+    success = True
+    
+    try:
+        logging.info('Request form: %s', request_form)
+
+        restaurant_name = request_form['restaurant_name'] if 'restaurant_name' in request_form else ''
+        restaurant_address = request_form['restaurant_address'] if 'restaurant_address' in request_form else ''
+        forecast_length = request_form['forecast_length'].split(',') if 'forecast_length' in request_form else ''
+
+        logging.info('Restaurant name: %s', restaurant_name)
+        logging.info('Restaurant address: %s', restaurant_address)
+        logging.info('Forecast length: %s', forecast_length)
+        
+        return success, restaurant_name, restaurant_address, forecast_length
+    except Exception as e:
+        success = False
+        logging.error('Exception occurred: %s', e)
+        
+        return success, '',                              '',              ''
+
+def handle_business_request(restaurant_name, restaurant_address):
+    success = True
+    
+    logging.info('Doing business request')
+    
     HEADERS = {'Authorization':'Bearer %s'%'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
-    URL_business = 'https://api.yelp.com/v3/businesses/matches'
-    PARAMS_business = {'name' : restaurant_name, 'address1' : restaurant_address, 'city' : 'Las Vegas', 'state' : 'NV', 'country' : 'US'}
+    PARAMS = {'name': restaurant_name, 'address1': restaurant_address, 'city': 'Las Vegas', 'state': 'NV', 'country': 'US'}
+    
+    yelp_request = requests.get('https://api.yelp.com/v3/businesses/matches', params = PARAMS, headers = HEADERS)
+    
+    if yelp_request.status_code != 200:
+        logging.error("Status Code: %s", yelp_request.status_code)
+        logging.error(yelp_request)
+        success = False
+        return success, ''
+    
+    try:
+        response_blob = json.loads(yelp_request.text)['businesses'][0]
+        business_id = response_blob['id']
+        logging.info('Response blob: %s', response_blob)
+        logging.info('Type: %s', type(response_blob))
+    except:
+        logging.error("Error in yelp business request")
+        logging.error(json.loads(yelp_request.text))
+        success = False
+        return success, ''
+    
+    return success, response_blob
 
-    URL_reviews = 'https://api.yelp.com/v3/businesses/{business_id}/reviews'
-    URL_business_info = 'https://api.yelp.com/v3/businesses/{business_id}'
-
-    yelp_request = requests.get(URL_business, params = PARAMS_business, headers = HEADERS)
-
-
-def do_review_request(response_blob):
+def handle_review_request(response_blob):
+    success = True
+    
     logging.info("Starting review request")
     try:
         business_id = response_blob['id']
     except:
-        logging.info("'id' not in response_blob")
-        return
+        logging.error("'id' not in response_blob")
+        logging.error("Review request was unsuccessful")
+        success = False
+        return success, '', '', '', ''
 
     HEADERS = {'Authorization':'Bearer %s'%'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
     URL_reviews = 'https://api.yelp.com/v3/businesses/{business_id}/reviews'
     logging.info("Headers and URL_reviews")
 
     try:
-        duplicate_locations = np.genfromtxt('app/static/duplicate_locations.csv',delimiter=',')
+        duplicate_locations = np.genfromtxt('app/static/duplicate_locations.csv', delimiter=',')
     except:
-        logging.info("Error opening duplicate locations file")
-        return
+        logging.error("Error opening duplicate locations file")
+        logging.error("Review request was unsuccessful")
+        success = False
+        return success, '', '', '', ''
     logging.info("Duplicate locations")
 
     try:
         yelp_review_request = requests.get(URL_reviews.format(business_id=business_id), headers = HEADERS)
         logging.info("Review request done, status code: %s", yelp_review_request.status_code)
     except:
-        logging.info("Error doing review request")
-        return
+        logging.error("Review request was unsuccessful")
+        success = False
+        return success, '', '', '', '' 
 
     if yelp_review_request.status_code == 200:
         logging.info("Review request text: %s", yelp_review_request.text)
@@ -53,8 +150,10 @@ def do_review_request(response_blob):
         try:
             analyzer = SentimentIntensityAnalyzer()
         except:
-            logging.info("Error for vader")
-            return
+            logging.error("Error doing vader sentiment analysis")
+            logging.error("Review request was unsuccessful")
+            success = False
+            return success, '', '', '', ''
 
         for review in json.loads(yelp_review_request.text)['reviews']:
             text = review['text']
@@ -81,13 +180,18 @@ def do_review_request(response_blob):
 
         logging.info("Duplicate location: %s", duplicate_location)
 
-        return ( avg_review_length, avg_compound_sentiment, alias, duplicate_location )
+        return success, avg_review_length, avg_compound_sentiment, alias, duplicate_location
     else:
+        logging.error("Review request was unsuccessful")
         logging.info("Review request status code: %s", yelp_review_request.status_code)
         logging.info("Error in review_input: %s", yelp_review_request)
-        return None
+        success = False
+        return success, '', '', '', ''
 
-def do_business_info_request(response_blob):
+def handle_business_info_request(response_blob):
+    success = True
+    
+    logging.info("Starting business info request")
     business_id = response_blob['id']
     HEADERS = {'Authorization':'Bearer %s' %'t2POjvVZfc64zVMRRDEvhFA_ffRJpB_MJvk0oqiOcJvyBtu_42soOy-m6JQo0JSZyqESd56-bE41ZxXRv8qmSXs01Pb05hCU-UocJXlOLFytEpodpjFWNZWkypgoXnYx'}
     URL_business_info = 'https://api.yelp.com/v3/businesses/{business_id}'
@@ -95,12 +199,19 @@ def do_business_info_request(response_blob):
     yelp_business_info_request = requests.get(URL_business_info.format(business_id=business_id), headers = HEADERS)
     if yelp_business_info_request.status_code == 200:
         biz_info_response_blob = json.loads(yelp_business_info_request.text)
-        is_closed = biz_info_response_blob['is_closed'] # TODO if closed, cut out and render a template that says restaurant is currently closed
+        
+        is_closed = biz_info_response_blob['is_closed']
+        if is_closed == True:
+            logging.warning("Restaurant is already closed")
+            
         rating = biz_info_response_blob['rating']
+        
         review_count = biz_info_response_blob['review_count']
-        cost = len(biz_info_response_blob['price']) # these are strings that look liked '$', '$$', '$$$', and '$$$$'
+        
         is_claimed = biz_info_response_blob['is_claimed']
 
+        cost = len(biz_info_response_blob['price']) # these are strings that look liked '$', '$$', '$$$', and '$$$$'
+        
         cost_1 = 0
         cost_2 = 0
         cost_3 = 0
@@ -122,70 +233,59 @@ def do_business_info_request(response_blob):
         else:
             is_claimed = 0
 
-        return ( is_closed, rating, review_count, cost, cost_1, cost_2, cost_3, cost_4, is_claimed )
+        return success, is_closed, rating, review_count, cost, cost_1, cost_2, cost_3, cost_4, is_claimed
     else:
         logging.info("Business info status code: %s", yelp_business_info_request.status_code)
         logging.info("Error in business info input: %s", yelp_business_info_request)
-        return None
+        success = False
+        return success, '', '', '', '', '', '', '', '', ''
 
-class LR_model():
+def handle_prediction(restaurant_name, duplicate_location, cost_1, cost_2, cost_3, cost_4, is_claimed, avg_compound_sentiment, avg_review_length, review_count, rating, alias, model):
+    success = True
+    
+    try:
+        chains = [line[:-1] for line in open('app/static/chains.csv')]
+        is_chain = 1 if str(restaurant_name.encode('utf-8')) in chains else 0
+    except Exception as e:
+        logging.error('Exception occurred: %s', e)
+        logging.error("Handle prediction failed")
+        success = False
+        return success, '', '', '', '', '', ''
+    
+    features = np.array( [ is_chain, duplicate_location, cost_1, cost_2, cost_3, cost_4, is_claimed, avg_compound_sentiment, avg_review_length, review_count, rating ] )
 
-    # TODO add decorators
-    def __init__(self): # include weights for other forecast lengths
-        self.weights = np.array([[  -7.99999848e-01,  8.21156318e-01, -7.40526739e-01,
-                                    -3.00875588e-01, -2.64969982e-01,  5.03601493e-01,
-                                    -6.88070682e+00,  1.79273077e-01,  5.07445374e-04,
-                                    3.22390460e-04,  7.66727829e-01]])
-        self.intercept = -0.89443562
-        self.threshold = 0.5
+    try:
+        model_prob, model_output = model.predict(features)
+        logging.info("Model output: %s", model_output)
+        logging.info("Model probability: %s", model_prob)
+    except Exception as e:
+        logging.error("Exception occurred: %s", e)
+        logging.error("Handle prediction failed")
+        success = False
+        return success, '', '', '', '', '', ''
 
-    def set_new_model_params(weights=None, intercept=None, threshold=None):
-        if weights is not None:
-            self.weights = weights
-        if intercept is not None:
-            self.intercept = intercept
-        if threshold is not None:
-            self.threshold = threshold
+    try:
+        link = u'https://www.yelp.com/biz/{alias}'.format(alias=alias)
+        logging.info("Link: %s", link)
+    except Exception as e:
+        logging.error("Exception occurred: %s", e)
+        logging.error("Handle prediction failed")
+        success = False
+        return success, '', '', '', '', '', ''
 
-    def predict(self, features):
-        logging.info("Features: %s", features)
+    try:
+        reasons = get_reasons(features, model_output, model.get_forecast_len())
 
-        log_odds = np.dot(self.weights, features) + self.intercept
-        logging.info("Log odds: %s", log_odds[0])
+        reason_1 = reasons[0]
+        reason_2 = reasons[1]
+        reason_3 = reasons[2]
+    except Exception as e:
+        logging.error("Exception occurred: %s", e)
+        logging.error("Handle prediction failed")
+        success = False
+        return success, '', '', '', '', '', ''
 
-        model_prob = 1.0 / ( 1.0 + np.exp(-log_odds) ) #convert_to_prob(log_odds)
-        logging.info("Model_prob: %s", model_prob[0])
-
-        model_output = True if model_prob > self.threshold else False
-        logging.info("Model_output: %s", model_output)
-
-        return model_prob[0], model_output
-
-class XGBoost_model():
-
-    def __init__(self, forecast_len):
-        with open('app/static/trained_classifier_%s_months.pkl'%(forecast_len), 'rb') as fid:
-            self.gs_model = pickle.load(fid)
-            logging.info("Loaded model: %s", self.gs_model)
-        self.forecast_len = forecast_len
-
-    def predict(self, features):
-        logging.info("Features: %s", features)
-
-        probabilities = self.gs_model.predict_proba( features.reshape(1, -1) )[0]
-
-        logging.info("Probabilities: %s", probabilities)
-
-        prob_0, prob_1 = probabilities[0], probabilities[1]
-        pred = 1 if prob_1 > prob_0 else 0
-
-        if pred == 1:
-            return prob_1, pred
-        else:
-            return prob_0, pred
-
-    def get_forecast_len(self):
-        return self.forecast_len
+    return success, link, model_prob, model_output, reason_1, reason_2, reason_3
 
 def get_reasons(features, model_output, forecast_len):
     """
